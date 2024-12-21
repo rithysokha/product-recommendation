@@ -134,22 +134,38 @@ def process_batch(df, epoch_id):
     
     # Evaluate the model
     try:
-        if test.count() > 0:
+        print(f"Test data count: {test.count()}")
+        print(f"Distinct products in test set: {test.select('productId').distinct().count()}")
+        
+        with open("/app/results/test_info.txt", "w") as f:
+            f.write(f"Test data count: {test.count()}\n")
+            f.write(f"Distinct products in test set: {test.select('productId').distinct().count()}\n")
+        
+        if test.select('productId').distinct().count() > 0:
+            print("Transforming test data...")
             predictions = model.transform(test)
+            print(f"Predictions count: {predictions.count()}")
+            
+            with open("/app/results/predictions_info.txt", "w") as f:
+                f.write(f"Predictions count: {predictions.count()}\n")
+                f.write("Predictions schema:\n")
+                predictions.printSchema(f)
+            
             if predictions.count() > 0:
                 evaluator = RegressionEvaluator(metricName="rmse", labelCol="rating", predictionCol="prediction")
                 rmse = evaluator.evaluate(predictions)
                 print(f"Root-mean-square error = {rmse}")
+                with open("/app/results/rmse.txt", "w") as f:
+                    f.write(f"RMSE: {rmse}\n")
             else:
                 print("No predictions were made. The model might not have enough data to make predictions.")
         else:
-            print("Test set is empty. Cannot evaluate the model.")
+            print("Test set is empty or has no distinct products. Cannot evaluate the model.")
     except Exception as e:
-        print(f"Error during model training or evaluation: {str(e)}")
-    
-    # Clear accumulated data after processing
-    accumulated_data = None
-    print("Batch processing complete")
+        print(f"Error during model evaluation: {str(e)}")
+        with open("/app/results/evaluation_error.txt", "w") as f:
+            f.write(f"Error during model evaluation: {str(e)}\n")
+
 
 
 # Start streaming query
