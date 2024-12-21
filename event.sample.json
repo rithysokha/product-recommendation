@@ -1,0 +1,20 @@
+{
+    "user": 225,
+    "customer_data": {
+        "id": 225,
+        "name": "Angelica Phillips",
+        "email": "john24@example.com",
+        "location": "New Dominique",
+        "age": 55
+    },
+    "product": 2,
+    "product_data": {
+        "id": 2,
+        "name": "Smartphone",
+        "category": "Electronics",
+        "price": 800
+    },
+    "quantity": 2,
+    "total_price": 1600,
+    "timestamp": 1734770442
+}
