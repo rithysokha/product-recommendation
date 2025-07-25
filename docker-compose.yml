@@ -55,5 +55,18 @@ services:
     volumes:
       - ./results:/app/results
 
+  recommendation-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./results:/app/results
+    depends_on:
+      - spark-app
+    environment:
+      - FLASK_ENV=development
+
 volumes:
   results:

@@ -89,18 +89,43 @@ def process_batch(df, epoch_id):
     test.printSchema()
     print(f"Test data count: {test.count()}")
     
-    # Build the recommendation model using ALS on the training data
     als = ALS(maxIter=10, regParam=0.01, userCol="userId", itemCol="productId", ratingCol="rating",
             coldStartStrategy="drop", nonnegative=True)
     model = als.fit(training)
     
-    # Generate top 5 product recommendations for each user
     userRecs = model.recommendForAllUsers(5)
     
     print("userRecs schema:")
     userRecs.printSchema()
     
-    # Create edges DataFrame
+    userMapping = user_product_df.select("user", "userId").distinct()
+    productMapping = user_product_df.select("product", "productId").distinct()
+    
+    userMapping.coalesce(1).write.csv("/app/results/user_mappings.csv", mode="overwrite", header=True)
+    productMapping.coalesce(1).write.csv("/app/results/product_mappings.csv", mode="overwrite", header=True)
+    
+    detailed_recommendations = userRecs.select(
+        col("userId"),
+        explode("recommendations").alias("rec")
+    ).select(
+        col("userId"),
+        col("rec.productId").alias("productId"),
+        col("rec.rating").alias("score")
+    )
+    
+    final_recommendations = detailed_recommendations \
+        .join(userMapping, detailed_recommendations.userId == userMapping.userId) \
+        .join(productMapping, detailed_recommendations.productId == productMapping.productId) \
+        .select(
+            userMapping.user.alias("user"), 
+            productMapping.product.alias("product"), 
+            detailed_recommendations.userId.alias("userId"), 
+            detailed_recommendations.productId.alias("productId"), 
+            detailed_recommendations.score.alias("score")
+        )
+    
+    final_recommendations.coalesce(1).write.csv("/app/results/recommendations.csv", mode="overwrite", header=True)
+    
     edges = userRecs.select(
         col("userId").alias("src"),
         explode("recommendations").alias("rec")
@@ -109,33 +134,48 @@ def process_batch(df, epoch_id):
         col("rec.productId").alias("dst")
     )
     
-    # Create vertices DataFrame
     users = user_product_df.select("userId").distinct()
     products = user_product_df.select("productId").distinct()
     vertices = users.withColumnRenamed("userId", "id").unionAll(products.withColumnRenamed("productId", "id"))
     
-    # Create GraphFrame
     g = GraphFrame(vertices, edges)
     
-    # Export the graph as CSV
     g.vertices.write.csv("/app/results/vertices.csv", mode="overwrite", header=True)
     g.edges.write.csv("/app/results/edges.csv", mode="overwrite", header=True)
     
-    print(f"Graph data saved to /app/results/")
+    detailed_recommendations = userRecs.select(
+        col("userId"),
+        explode("recommendations").alias("rec")
+    ).select(
+        col("userId"),
+        col("rec.productId").alias("productId"),
+        col("rec.rating").alias("score")
+    )
     
-    # Join with original data to get string user and product names
     userMapping = user_product_df.select("user", "userId").distinct()
     productMapping = user_product_df.select("product", "productId").distinct()
     
-    recommendations = userRecs \
-        .join(userMapping, userRecs.userId == userMapping.userId) \
-        .join(productMapping, col("productId") == productMapping.productId) \
-        .select("user", "product")
+    final_recommendations = detailed_recommendations \
+        .join(userMapping, detailed_recommendations.userId == userMapping.userId) \
+        .join(productMapping, detailed_recommendations.productId == productMapping.productId) \
+        .select(
+            userMapping.user.alias("user"), 
+            productMapping.product.alias("product"), 
+            detailed_recommendations.userId.alias("userId"), 
+            detailed_recommendations.productId.alias("productId"), 
+            detailed_recommendations.score.alias("score")
+        )
+    
+    final_recommendations.write.csv("/app/results/recommendations.csv", mode="overwrite", header=True)
+    
+    userMapping.write.csv("/app/results/user_mappings.csv", mode="overwrite", header=True)
+    productMapping.write.csv("/app/results/product_mappings.csv", mode="overwrite", header=True)
+    
+    print("Graph data saved to /app/results/")
     
     print("Recommendations:")
-    recommendations.show(truncate=False)
+    final_recommendations.select("user", "product", "score").show(20, truncate=False)
     
-    # Evaluate the model
     try:
         print(f"Test data count: {test.count()}")
         print(f"Distinct products in test set: {test.select('productId').distinct().count()}")

@@ -103,11 +103,39 @@ $ pip install -r requirements-dev.txt
 $ docker compose up --build
 ```
 
-4. The Spark application will start processing data, and the Kafka producer will start sending simulated sales data.
+4. The system includes:
+   - Spark application processing data
+   - Kafka producer generating simulated sales data
+   - **NEW**: REST API for testing recommendations at `http://localhost:5000`
 
 5. Check the `results` directory for CSV files 
 
-6. visualization images:
+6. Test the API:
+
+**Option A: Web Interface**
+```bash
+# Open the test interface in your browser
+open api_test_interface.html
+```
+
+**Option B: Python Test Script**
+```bash
+python test_api.py
+```
+
+**Option C: Direct API calls**
+```bash
+# Check API health
+curl http://localhost:5000/health
+
+# Get recommendations for a user
+curl http://localhost:5000/recommendations/user1?limit=5
+
+# Get system statistics
+curl http://localhost:5000/stats
+```
+
+7. Generate visualization images:
 
 ```bash
 $ python3 visualize_graph.py
@@ -166,5 +194,23 @@ This bar chart shows the most frequently recommended products.
 
 - Implement real-time visualization updates.
 - Add more advanced recommendation algorithms.
-- Integrate with a front-end for interactive user recommendations.
+- **COMPLETED**: ✅ Integrate with a REST API for interactive user recommendations.
 - Incorporate additional data sources for more nuanced recommendations.
+- Add user authentication and personalization features.
+- Implement A/B testing for recommendation algorithms.
+
+## API Documentation
+
+The system now includes a REST API for testing and interacting with recommendations. See `API_README.md` for detailed documentation.
+
+**Quick API Examples:**
+```bash
+# Get recommendations for a user
+curl http://localhost:5000/recommendations/user1?limit=5
+
+# Get similar users
+curl http://localhost:5000/users/user1/similar?limit=3
+
+# Get system statistics
+curl http://localhost:5000/stats
+```

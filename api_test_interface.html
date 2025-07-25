@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Recommendation API Test Interface</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .result {
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #27ae60;
+            background-color: #d5f4e6;
+        }
+        .error {
+            border-color: #e74c3c;
+            background-color: #fdeaea;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Product Recommendation API Test Interface</h1>
+        
+        <!-- API Status -->
+        <div class="section">
+            <h3>📊 API Status</h3>
+            <button onclick="checkHealth()">Check Health</button>
+            <button onclick="getStats()">Get Statistics</button>
+            <button onclick="reloadData()">Reload Data</button>
+            <div id="status-result" class="result" style="display:none;"></div>
+            <div id="stats-cards" class="stats-grid" style="display:none;"></div>
+        </div>
+
+        <!-- User Recommendations -->
+        <div class="section">
+            <h3>👤 User Recommendations</h3>
+            <div>
+                <input type="text" id="user-id" placeholder="Enter user ID" style="width: 200px;">
+                <input type="number" id="rec-limit" value="5" min="1" max="20" style="width: 60px;" placeholder="Limit">
+                <button onclick="getUserRecommendations()">Get Recommendations</button>
+                <button onclick="getUsers()">List All Users</button>
+            </div>
+            <div id="user-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Multiple Users -->
+        <div class="section">
+            <h3>👥 Multiple Users Recommendations</h3>
+            <div>
+                <input type="text" id="multiple-users" placeholder="Enter user IDs (comma separated)" style="width: 300px;">
+                <input type="number" id="multi-limit" value="3" min="1" max="10" style="width: 60px;" placeholder="Limit">
+                <button onclick="getMultipleRecommendations()">Get Multiple Recommendations</button>
+            </div>
+            <div id="multiple-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Similar Users -->
+        <div class="section">
+            <h3>🔍 Similar Users</h3>
+            <div>
+                <input type="text" id="similar-user-id" placeholder="Enter user ID" style="width: 200px;">
+                <input type="number" id="similar-limit" value="5" min="1" max="20" style="width: 60px;" placeholder="Limit">
+                <button onclick="getSimilarUsers()">Find Similar Users</button>
+            </div>
+            <div id="similar-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Product Users -->
+        <div class="section">
+            <h3>🛍️ Product Analysis</h3>
+            <div>
+                <input type="text" id="product-id" placeholder="Enter product ID" style="width: 200px;">
+                <input type="number" id="product-limit" value="10" min="1" max="50" style="width: 60px;" placeholder="Limit">
+                <button onclick="getProductUsers()">Get Users for Product</button>
+            </div>
+            <div id="product-result" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000';
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = isError ? 'result error' : 'result success';
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        function showStatsCards(stats) {
+            const cardsContainer = document.getElementById('stats-cards');
+            cardsContainer.style.display = 'grid';
+            
+            cardsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total_users || 0}</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total_unique_products || 0}</div>
+                    <div class="stat-label">Unique Products</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.average_recommendations_per_user || 0}</div>
+                    <div class="stat-label">Avg Recommendations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.model_metrics?.rmse ? stats.model_metrics.rmse.toFixed(3) : 'N/A'}</div>
+                    <div class="stat-label">Model RMSE</div>
+                </div>
+            `;
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                throw new Error(`API Error: ${error.message}`);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const data = await apiCall('/health');
+                showResult('status-result', data);
+            } catch (error) {
+                showResult('status-result', error.message, true);
+            }
+        }
+
+        async function getStats() {
+            try {
+                const data = await apiCall('/stats');
+                showResult('status-result', data);
+                showStatsCards(data);
+            } catch (error) {
+                showResult('status-result', error.message, true);
+            }
+        }
+
+        async function reloadData() {
+            try {
+                const data = await apiCall('/reload', { method: 'POST' });
+                showResult('status-result', data);
+            } catch (error) {
+                showResult('status-result', error.message, true);
+            }
+        }
+
+        async function getUserRecommendations() {
+            const userId = document.getElementById('user-id').value.trim();
+            const limit = document.getElementById('rec-limit').value;
+            
+            if (!userId) {
+                showResult('user-result', 'Please enter a user ID', true);
+                return;
+            }
+
+            try {
+                const data = await apiCall(`/recommendations/${userId}?limit=${limit}`);
+                showResult('user-result', data);
+            } catch (error) {
+                showResult('user-result', error.message, true);
+            }
+        }
+
+        async function getUsers() {
+            try {
+                const data = await apiCall('/users?per_page=20');
+                showResult('user-result', data);
+            } catch (error) {
+                showResult('user-result', error.message, true);
+            }
+        }
+
+        async function getMultipleRecommendations() {
+            const userIdsStr = document.getElementById('multiple-users').value.trim();
+            const limit = document.getElementById('multi-limit').value;
+            
+            if (!userIdsStr) {
+                showResult('multiple-result', 'Please enter user IDs', true);
+                return;
+            }
+
+            const userIds = userIdsStr.split(',').map(id => id.trim()).filter(id => id);
+            
+            try {
+                const data = await apiCall('/recommendations', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_ids: userIds, limit: parseInt(limit) })
+                });
+                showResult('multiple-result', data);
+            } catch (error) {
+                showResult('multiple-result', error.message, true);
+            }
+        }
+
+        async function getSimilarUsers() {
+            const userId = document.getElementById('similar-user-id').value.trim();
+            const limit = document.getElementById('similar-limit').value;
+            
+            if (!userId) {
+                showResult('similar-result', 'Please enter a user ID', true);
+                return;
+            }
+
+            try {
+                const data = await apiCall(`/users/${userId}/similar?limit=${limit}`);
+                showResult('similar-result', data);
+            } catch (error) {
+                showResult('similar-result', error.message, true);
+            }
+        }
+
+        async function getProductUsers() {
+            const productId = document.getElementById('product-id').value.trim();
+            const limit = document.getElementById('product-limit').value;
+            
+            if (!productId) {
+                showResult('product-result', 'Please enter a product ID', true);
+                return;
+            }
+
+            try {
+                const data = await apiCall(`/products/${productId}/users?limit=${limit}`);
+                showResult('product-result', data);
+            } catch (error) {
+                showResult('product-result', error.message, true);
+            }
+        }
+
+        // Auto-check health on page load
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html>
