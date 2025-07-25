@@ -15,7 +15,7 @@ services:
       - zookeeper
 
   spark-master:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.5.0
     environment:
       - SPARK_MODE=master
     ports:
@@ -23,7 +23,7 @@ services:
       - "7077:7077"
 
   spark-worker-1:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.5.0
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
@@ -31,7 +31,7 @@ services:
       - spark-master
 
   spark-worker-2:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.5.0
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077

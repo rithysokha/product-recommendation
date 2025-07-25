@@ -1,4 +1,4 @@
-FROM bitnami/spark:latest
+FROM bitnami/spark:3.5.0
 
 USER root
 
@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 
 COPY spark_streaming /app
 
-CMD ["spark-submit", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2,graphframes:graphframes:0.8.2-spark3.2-s_2.12", "streaming_app.py"]
+CMD ["spark-submit", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,graphframes:graphframes:0.8.4-spark3.5-s_2.12", "--conf", "spark.sql.adaptive.enabled=true", "--conf", "spark.sql.adaptive.coalescePartitions.enabled=true", "streaming_app.py"]

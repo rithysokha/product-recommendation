@@ -9,7 +9,10 @@ from graphframes import GraphFrame
 # Spark session
 spark = SparkSession.builder \
     .appName("ProductRecommendation") \
-    .config("spark.jars.packages", "graphframes:graphframes:0.8.2-spark3.2-s_2.12") \
+    .config("spark.jars.packages", "graphframes:graphframes:0.8.4-spark3.5-s_2.12") \
+    .config("spark.sql.adaptive.enabled", "true") \
+    .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
     .getOrCreate()
 
 # Schema for incoming data
